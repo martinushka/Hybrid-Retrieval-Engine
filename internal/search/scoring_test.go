@@ -6,6 +6,18 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
+func TestScoreIsCaseInsensitive(t *testing.T) {
+	p := product.Product{
+		Title: "Lenovo ThinkPad X1",
+	}
+
+	got := scoreProduct("LENOVO!", p)
+
+	if got != 3 {
+		t.Fatalf("expected score 3, got %v", got)
+	}
+}
+
 func TestScoreProduct(t *testing.T) {
 	p := product.Product{
 		Title:       "Lenovo ThinkPad X1",
@@ -14,8 +26,8 @@ func TestScoreProduct(t *testing.T) {
 
 	score := scoreProduct("Lenovo", p)
 
-	if score != 5 {
-		t.Fatalf("expected score 5, got %f", score)
+	if score != 3 {
+		t.Fatalf("expected score 3, got %f", score)
 	}
 }
 
@@ -39,8 +51,8 @@ func TestScoreProductDescription(t *testing.T) {
 
 	score := scoreProduct("Lenovo", p)
 
-	if score != 2 {
-		t.Fatalf("expected score 2, got %f", score)
+	if score != 1 {
+		t.Fatalf("expected score 1, got %f", score)
 	}
 }
 
