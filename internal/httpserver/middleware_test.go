@@ -40,3 +40,20 @@ func TestStatusRecorderDefaultsToOK(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, w.status)
 	}
 }
+
+func TestLoggingMiddleware(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	})
+
+	wrapped := Logging(handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	recorder := httptest.NewRecorder()
+
+	wrapped.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusAccepted {
+		t.Fatalf("expected status %d, got %d", http.StatusAccepted, recorder.Code)
+	}
+}
