@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/martinushka/ios-rag/internal/config"
 )
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -12,11 +14,13 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	cfg := config.Load()
+
 	http.HandleFunc("/health", healthHandler)
 
-	log.Println("ios-rag server started on :8080")
+	log.Printf("ios-rag server started on :%s", cfg.Port)
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":"+cfg.Port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
