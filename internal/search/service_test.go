@@ -3,14 +3,40 @@ package search
 import (
 	"context"
 	"testing"
+
+	"github.com/martinushka/ios-rag/internal/product"
 )
 
 func TestInMemoryServiceSearch(t *testing.T) {
-	service := NewInMemoryService()
+	products := []product.Product{
+		{
+			ID:          "1",
+			Title:       "Lenovo ThinkPad X1",
+			Description: "Business laptop",
+			Category:    "laptops",
+			Price:       1299.99,
+		},
+		{
+			ID:          "2",
+			Title:       "Lenovo",
+			Description: "Laptop",
+			Category:    "laptops",
+			Price:       999.99,
+		},
+		{
+			ID:          "3",
+			Title:       "MacBook Air M2",
+			Description: "Apple laptop",
+			Category:    "laptops",
+			Price:       999.99,
+		},
+	}
+
+	service := NewInMemoryService(products)
 
 	results, err := service.Search(
 		context.Background(),
-		"ноутбук Lenovo",
+		"Lenovo",
 		10,
 	)
 
@@ -18,7 +44,15 @@ func TestInMemoryServiceSearch(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(results) != 0 {
-		t.Fatalf("expected 0 results, got %d", len(results))
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(results))
+	}
+
+	if results[0] != "Lenovo" {
+		t.Fatalf("expected exact title first, got %s", results[0])
+	}
+
+	if results[1] != "Lenovo ThinkPad X1" {
+		t.Fatalf("expected ThinkPad second, got %s", results[1])
 	}
 }
