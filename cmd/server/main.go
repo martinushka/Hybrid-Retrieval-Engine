@@ -13,6 +13,7 @@ import (
 	"github.com/martinushka/ios-rag/internal/api"
 	"github.com/martinushka/ios-rag/internal/config"
 	"github.com/martinushka/ios-rag/internal/httpserver"
+	"github.com/martinushka/ios-rag/internal/search"
 )
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,10 +23,12 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	cfg := config.Load()
+	searchService := search.NewInMemoryService()
+	apiHandler := api.NewHandler(searchService)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/api/v1/search", api.Search)
+	mux.HandleFunc("/api/v1/search", apiHandler.Search)
 
 	handler := httpserver.Logging(mux)
 

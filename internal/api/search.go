@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/martinushka/ios-rag/internal/search"
 )
 
 type SearchRequest struct {
@@ -15,7 +17,17 @@ type SearchResponse struct {
 	Results []string `json:"results"`
 }
 
-func Search(w http.ResponseWriter, r *http.Request) {
+type Handler struct {
+	searchService search.Service
+}
+
+func NewHandler(searchService search.Service) *Handler {
+	return &Handler{
+		searchService: searchService,
+	}
+}
+
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -37,9 +49,19 @@ func Search(w http.ResponseWriter, r *http.Request) {
 		request.Limit = 10
 	}
 
+	results, err := h.searchService.Search(
+		r.Context(),
+		request.Query,
+		request.Limit,
+	)
+	if err != nil {
+		http.Error(w, "search failed", http.StatusInternalServerError)
+		return
+	}
+
 	response := SearchResponse{
 		Query:   request.Query,
-		Results: []string{},
+		Results: results,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
