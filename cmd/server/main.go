@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/martinushka/ios-rag/internal/api"
 	"github.com/martinushka/ios-rag/internal/config"
 	"github.com/martinushka/ios-rag/internal/httpserver"
 )
@@ -24,6 +25,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/api/v1/search", api.Search)
 
 	handler := httpserver.Logging(mux)
 
