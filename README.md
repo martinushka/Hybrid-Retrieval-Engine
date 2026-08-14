@@ -1,19 +1,22 @@
-# RAG Search Backend
+# Hybrid Retrieval Engine
 
-Backend на **Go** для интеллектуального поиска по каталогу товаров и построения RAG-системы.
+A **Go-based backend** for intelligent product search, combining lexical search, semantic retrieval, hybrid ranking, and RAG-powered answer generation.
 
-Система преобразует пользовательский запрос в набор релевантных документов, ранжирует результаты и формирует контекст для последующей генерации ответа с помощью LLM.
+The system is designed to retrieve the most relevant products for a user query, rank them using multiple signals, and provide the retrieved context to an LLM for generating grounded answers.
 
-## Что делает система
+## What the System Does
 
-* принимает поисковый запрос через REST API;
-* нормализует и токенизирует текст;
-* выполняет поиск по названию, категории и описанию;
-* рассчитывает **relevance score** для найденных документов;
-* ранжирует результаты;
-* возвращает **Top-K** наиболее релевантных документов.
+* accepts search queries through a REST API;
+* normalizes and tokenizes text;
+* performs lexical search across product titles, categories, and descriptions;
+* calculates relevance scores for retrieved products;
+* performs semantic search using embeddings and vector similarity;
+* combines lexical and semantic results through hybrid ranking;
+* retrieves the Top-K most relevant documents;
+* builds context for an LLM;
+* returns generated answers together with their sources.
 
-## Архитектура
+## Architecture
 
 ```text
 User Query
@@ -21,50 +24,52 @@ User Query
     ▼
 Query Processing
     │
-    ├───────────────┐
-    ▼               ▼
-Keyword Search   Semantic Search
-    │               │
-    └───────┬───────┘
-            ▼
-      Hybrid Ranking
-            │
-            ▼
+    ├─────────────────┐
+    ▼                 ▼
+Lexical Search   Semantic Search
+    │                 │
+    └────────┬────────┘
+             ▼
+       Hybrid Ranking
+             │
+             ▼
            Top-K
-            │
-            ▼
-   Context Construction
-            │
-            ▼
-           LLM
-            │
-            ▼
+             │
+             ▼
+     Context Construction
+             │
+             ▼
+            LLM
+             │
+             ▼
       Answer + Sources
 ```
 
-## Основные компоненты
+## Core Components
 
-**Text Processing** — нормализация и токенизация запросов и документов.
+**Text Processing** — text normalization and tokenization for queries and documents.
 
-**Keyword Search** — поиск по названию, категории и описанию с использованием relevance scoring.
+**Lexical Search** — keyword-based retrieval across product titles, categories, and descriptions using relevance scoring.
 
-**Semantic Search** — поиск документов по смыслу с использованием embeddings и vector search.
+**Semantic Search** — retrieval based on semantic similarity using text embeddings and vector search.
 
-**Hybrid Ranking** — объединение результатов lexical и semantic retrieval для повышения релевантности.
+**Hybrid Ranking** — combines lexical and semantic relevance signals to improve retrieval quality.
 
-**RAG Pipeline** — формирование контекста из найденных документов и генерация ответа на основе retrieved context.
+**RAG Pipeline** — constructs a context from retrieved documents and uses an LLM to generate grounded answers.
 
-**Sources** — возврат документов, использованных для формирования ответа.
+**Sources** — preserves the documents used to generate each answer, improving transparency and traceability.
 
 ## Tech Stack
 
-* **Go** — backend и бизнес-логика
+* **Go** — backend and core business logic
 * **net/http** — REST API
-* **PostgreSQL** — хранение данных
-* **pgvector** — vector search
-* **Embeddings** — семантическое представление текста
-* **LLM** — генерация ответа на основе найденного контекста
-* **Docker** — контейнеризация
+* **PostgreSQL** — persistent data storage
+* **pgvector** — vector storage and similarity search
+* **Embeddings** — semantic representation of queries and documents
+* **LLM** — context-aware answer generation
+* **Docker** — containerization
 * **Git** — version control
 
-Проект развивается от классического **keyword search** к **hybrid retrieval** и полноценному **RAG pipeline**, с фокусом на качество поиска, ранжирование и архитектуру backend-системы.
+## Project Direction
+
+The project evolves from a classical **lexical search engine** into a **hybrid retrieval system** and ultimately a full **RAG pipeline**, focusing on retrieval quality, ranking algorithms, vector search, and production-oriented backend architecture.
