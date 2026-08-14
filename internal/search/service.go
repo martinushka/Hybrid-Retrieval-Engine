@@ -8,8 +8,13 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
+type SearchResult struct {
+	Product product.Product
+	Score   float64
+}
+
 type Service interface {
-	Search(ctx context.Context, query string, limit int) ([]string, error)
+	Search(ctx context.Context, query string, limit int) ([]SearchResult, error)
 }
 
 type InMemoryService struct {
@@ -31,11 +36,11 @@ func (s *InMemoryService) Search(
 	ctx context.Context,
 	query string,
 	limit int,
-) ([]string, error) {
+) ([]SearchResult, error) {
 	query = strings.TrimSpace(query)
 
 	if query == "" || limit <= 0 {
-		return []string{}, nil
+		return []SearchResult{}, nil
 	}
 
 	products, err := s.repository.List(ctx)
@@ -64,10 +69,13 @@ func (s *InMemoryService) Search(
 		scored = scored[:limit]
 	}
 
-	results := make([]string, 0, len(scored))
+	results := make([]SearchResult, 0, len(scored))
 
 	for _, item := range scored {
-		results = append(results, item.product.Title)
+		results = append(results, SearchResult{
+			Product: item.product,
+			Score:   item.score,
+		})
 	}
 
 	return results, nil

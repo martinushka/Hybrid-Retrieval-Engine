@@ -12,9 +12,18 @@ type SearchRequest struct {
 	Limit int    `json:"limit"`
 }
 
+type SearchResult struct {
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Category    string  `json:"category"`
+	Price       float64 `json:"price"`
+	Score       float64 `json:"score"`
+}
+
 type SearchResponse struct {
-	Query   string   `json:"query"`
-	Results []string `json:"results"`
+	Query   string         `json:"query"`
+	Results []SearchResult `json:"results"`
 }
 
 type Handler struct {
@@ -59,9 +68,22 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	responseResults := make([]SearchResult, 0, len(results))
+
+	for _, result := range results {
+		responseResults = append(responseResults, SearchResult{
+			ID:          result.Product.ID,
+			Title:       result.Product.Title,
+			Description: result.Product.Description,
+			Category:    result.Product.Category,
+			Price:       result.Product.Price,
+			Score:       result.Score,
+		})
+	}
+
 	response := SearchResponse{
 		Query:   request.Query,
-		Results: results,
+		Results: responseResults,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

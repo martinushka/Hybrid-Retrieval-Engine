@@ -13,9 +13,21 @@ import (
 
 func TestSearchReturnsServiceResults(t *testing.T) {
 	service := &fakeSearchService{
-		results: []string{
-			"Lenovo ThinkPad X1",
-			"Lenovo IdeaPad 5",
+		results: []search.SearchResult{
+			{
+				Product: product.Product{
+					ID:    "1",
+					Title: "Lenovo ThinkPad X1",
+				},
+				Score: 3,
+			},
+			{
+				Product: product.Product{
+					ID:    "2",
+					Title: "Lenovo IdeaPad 5",
+				},
+				Score: 3,
+			},
 		},
 	}
 
@@ -35,7 +47,7 @@ func TestSearchReturnsServiceResults(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
 	}
 
-	expected := `{"query":"ноутбук Lenovo","results":["Lenovo ThinkPad X1","Lenovo IdeaPad 5"]}` + "\n"
+	expected := `{"query":"ноутбук Lenovo","results":[{"id":"1","title":"Lenovo ThinkPad X1","description":"","category":"","price":0,"score":3},{"id":"2","title":"Lenovo IdeaPad 5","description":"","category":"","price":0,"score":3}]}` + "\n"
 
 	if recorder.Body.String() != expected {
 		t.Fatalf("unexpected response: %s", recorder.Body.String())
@@ -43,14 +55,14 @@ func TestSearchReturnsServiceResults(t *testing.T) {
 }
 
 type fakeSearchService struct {
-	results []string
+	results []search.SearchResult
 }
 
 func (f *fakeSearchService) Search(
 	ctx context.Context,
 	query string,
 	limit int,
-) ([]string, error) {
+) ([]search.SearchResult, error) {
 	return f.results, nil
 }
 

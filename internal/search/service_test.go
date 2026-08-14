@@ -49,11 +49,19 @@ func TestInMemoryServiceSearch(t *testing.T) {
 		t.Fatalf("expected 2 results, got %d", len(results))
 	}
 
-	if results[0] != "Lenovo" {
-		t.Fatalf("expected exact title first, got %s", results[0])
+	if results[0].Product.Title != "Lenovo" {
+		t.Fatalf("expected exact title first, got %s", results[0].Product.Title)
 	}
 
-	if results[1] != "Lenovo ThinkPad X1" {
-		t.Fatalf("expected ThinkPad second, got %s", results[1])
+	if results[1].Product.Title != "Lenovo ThinkPad X1" {
+		t.Fatalf("expected ThinkPad second, got %s", results[1].Product.Title)
+	}
+
+	if results[0].Score <= results[1].Score {
+		t.Fatalf(
+			"expected exact title to have higher score: %f <= %f",
+			results[0].Score,
+			results[1].Score,
+		)
 	}
 }
