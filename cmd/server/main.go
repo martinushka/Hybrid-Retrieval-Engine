@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/martinushka/ios-rag/internal/config"
+	"github.com/martinushka/ios-rag/internal/httpserver"
 )
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,9 +25,11 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
 
+	handler := httpserver.Logging(mux)
+
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: mux,
+		Handler: handler,
 	}
 
 	stop := make(chan os.Signal, 1)
