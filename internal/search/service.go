@@ -13,12 +13,12 @@ type Service interface {
 }
 
 type InMemoryService struct {
-	products []product.Product
+	repository product.Repository
 }
 
-func NewInMemoryService(products []product.Product) *InMemoryService {
+func NewInMemoryService(repository product.Repository) *InMemoryService {
 	return &InMemoryService{
-		products: products,
+		repository: repository,
 	}
 }
 
@@ -38,9 +38,14 @@ func (s *InMemoryService) Search(
 		return []string{}, nil
 	}
 
-	scored := make([]scoredProduct, 0, len(s.products))
+	products, err := s.repository.List(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, p := range s.products {
+	scored := make([]scoredProduct, 0, len(products))
+
+	for _, p := range products {
 		score := scoreProduct(query, p)
 
 		if score > 0 {

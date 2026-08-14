@@ -48,7 +48,8 @@ func main() {
 		},
 	}
 
-	searchService := search.NewInMemoryService(products)
+	repository := product.NewInMemoryRepository(products)
+	searchService := search.NewInMemoryService(repository)
 	apiHandler := api.NewHandler(searchService)
 
 	mux := http.NewServeMux()

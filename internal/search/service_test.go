@@ -32,7 +32,8 @@ func TestInMemoryServiceSearch(t *testing.T) {
 		},
 	}
 
-	service := NewInMemoryService(products)
+	repository := product.NewInMemoryRepository(products)
+	service := NewInMemoryService(repository)
 
 	results, err := service.Search(
 		context.Background(),

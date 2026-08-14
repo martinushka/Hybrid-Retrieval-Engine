@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/martinushka/ios-rag/internal/product"
 	"github.com/martinushka/ios-rag/internal/search"
 )
 
@@ -54,7 +55,8 @@ func (f *fakeSearchService) Search(
 }
 
 func newTestHandler() *Handler {
-	return NewHandler(search.NewInMemoryService(nil))
+	repository := product.NewInMemoryRepository(nil)
+	return NewHandler(search.NewInMemoryService(repository))
 }
 
 func TestSearch(t *testing.T) {
