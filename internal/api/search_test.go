@@ -54,7 +54,7 @@ func (f *fakeSearchService) Search(
 }
 
 func newTestHandler() *Handler {
-	return NewHandler(search.NewInMemoryService())
+	return NewHandler(search.NewInMemoryService(nil))
 }
 
 func TestSearch(t *testing.T) {
