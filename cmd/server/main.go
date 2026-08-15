@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/martinushka/ios-rag/internal/api"
-	"github.com/martinushka/ios-rag/internal/catalog"
 	"github.com/martinushka/ios-rag/internal/config"
 	"github.com/martinushka/ios-rag/internal/httpserver"
 	"github.com/martinushka/ios-rag/internal/product"
@@ -25,9 +24,16 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	cfg := config.Load()
-	products := catalog.Seed()
 
-	repository := product.NewInMemoryRepository(products)
+	ctx := context.Background()
+
+	conn, err := product.ConnectPostgres(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("postgres connection error: %v", err)
+	}
+	defer conn.Close(ctx)
+
+	repository := product.NewPostgresRepository(conn)
 	searchService := search.NewInMemoryService(repository)
 	apiHandler := api.NewHandler(searchService)
 
@@ -46,7 +52,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("ios-rag server started on :%s", cfg.Port)
+		log.Printf("server started on :%s", cfg.Port)
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
@@ -57,10 +63,13 @@ func main() {
 
 	log.Println("shutting down server")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(
+		context.Background(),
+		5*time.Second,
+	)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("server shutdown error: %v", err)
 	}
 

@@ -43,7 +43,12 @@ func (s *InMemoryService) Search(
 		return []SearchResult{}, nil
 	}
 
-	products, err := s.repository.List(ctx)
+	candidateLimit := limit * 5
+	if candidateLimit < 50 {
+		candidateLimit = 50
+	}
+
+	products, err := s.repository.Search(ctx, query, candidateLimit)
 	if err != nil {
 		return nil, err
 	}
