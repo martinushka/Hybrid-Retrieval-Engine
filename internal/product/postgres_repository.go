@@ -111,3 +111,56 @@ func (r *PostgresRepository) Search(
 
 	return results, nil
 }
+
+func (r *PostgresRepository) SemanticSearch(
+	ctx context.Context,
+	embedding []float32,
+	limit int,
+) ([]Candidate, error) {
+	if len(embedding) != 384 || limit <= 0 {
+		return []Candidate{}, nil
+	}
+
+	rows, err := r.conn.Query(ctx, `
+		SELECT
+			id,
+			title,
+			description,
+			category,
+			price,
+			1 - (embedding <=> $1::vector) AS semantic_score
+		FROM products
+		WHERE embedding IS NOT NULL
+		ORDER BY embedding <=> $1::vector
+		LIMIT $2
+	`, embedding, limit)
+	if err != nil {
+		return nil, fmt.Errorf("semantic search products: %w", err)
+	}
+	defer rows.Close()
+
+	results := make([]Candidate, 0, limit)
+
+	for rows.Next() {
+		var candidate Candidate
+
+		if err := rows.Scan(
+			&candidate.Product.ID,
+			&candidate.Product.Title,
+			&candidate.Product.Description,
+			&candidate.Product.Category,
+			&candidate.Product.Price,
+			&candidate.SemanticScore,
+		); err != nil {
+			return nil, err
+		}
+
+		results = append(results, candidate)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}

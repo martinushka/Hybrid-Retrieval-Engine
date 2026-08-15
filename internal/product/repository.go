@@ -8,13 +8,15 @@ import (
 )
 
 type Candidate struct {
-	Product      Product
-	LexicalScore float64
+	Product       Product
+	LexicalScore  float64
+	SemanticScore float64
 }
 
 type Repository interface {
 	List(ctx context.Context) ([]Product, error)
 	Search(ctx context.Context, query string, limit int) ([]Candidate, error)
+	SemanticSearch(ctx context.Context, embedding []float32, limit int) ([]Candidate, error)
 }
 
 type InMemoryRepository struct {
@@ -58,8 +60,7 @@ func (r *InMemoryRepository) Search(
 			matchesAny(queryTokens, descriptionTokens) ||
 			matchesAny(queryTokens, categoryTokens) {
 			results = append(results, Candidate{
-				Product:      p,
-				LexicalScore: 0,
+				Product: p,
 			})
 		}
 
@@ -69,6 +70,14 @@ func (r *InMemoryRepository) Search(
 	}
 
 	return results, nil
+}
+
+func (r *InMemoryRepository) SemanticSearch(
+	ctx context.Context,
+	embedding []float32,
+	limit int,
+) ([]Candidate, error) {
+	return []Candidate{}, nil
 }
 
 func matchesAny(queryTokens, documentTokens []string) bool {
