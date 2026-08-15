@@ -65,18 +65,16 @@ func (r *PostgresRepository) Search(
 		return []Product{}, nil
 	}
 
-	pattern := "%" + query + "%"
-
 	rows, err := r.conn.Query(ctx, `
 		SELECT id, title, description, category, price
 		FROM products
-		WHERE
-			title ILIKE $1
-			OR description ILIKE $1
-			OR category ILIKE $1
-		ORDER BY id
+		WHERE search_vector @@ websearch_to_tsquery('simple', $1)
+		ORDER BY ts_rank(
+			search_vector,
+			websearch_to_tsquery('simple', $1)
+		) DESC
 		LIMIT $2
-	`, pattern, limit)
+	`, query, limit)
 	if err != nil {
 		return nil, fmt.Errorf("search products: %w", err)
 	}
