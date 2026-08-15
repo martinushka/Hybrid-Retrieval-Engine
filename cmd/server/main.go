@@ -12,6 +12,7 @@ import (
 
 	"github.com/martinushka/ios-rag/internal/api"
 	"github.com/martinushka/ios-rag/internal/config"
+	"github.com/martinushka/ios-rag/internal/embedding"
 	"github.com/martinushka/ios-rag/internal/httpserver"
 	"github.com/martinushka/ios-rag/internal/product"
 	"github.com/martinushka/ios-rag/internal/search"
@@ -34,7 +35,8 @@ func main() {
 	defer conn.Close(ctx)
 
 	repository := product.NewPostgresRepository(conn)
-	searchService := search.NewInMemoryService(repository)
+	embedder := embedding.NewHTTPProvider("http://127.0.0.1:8000")
+	searchService := search.NewInMemoryService(repository, embedder)
 	apiHandler := api.NewHandler(searchService)
 
 	mux := http.NewServeMux()

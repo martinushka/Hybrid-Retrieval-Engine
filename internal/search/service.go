@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/martinushka/ios-rag/internal/embedding"
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
@@ -19,11 +20,16 @@ type Service interface {
 
 type InMemoryService struct {
 	repository product.Repository
+	embedder   embedding.Provider
 }
 
-func NewInMemoryService(repository product.Repository) *InMemoryService {
+func NewInMemoryService(
+	repository product.Repository,
+	embedder embedding.Provider,
+) *InMemoryService {
 	return &InMemoryService{
 		repository: repository,
+		embedder:   embedder,
 	}
 }
 
@@ -48,23 +54,62 @@ func (s *InMemoryService) Search(
 		candidateLimit = 50
 	}
 
-	candidates, err := s.repository.Search(ctx, query, candidateLimit)
+	lexicalCandidates, err := s.repository.Search(
+		ctx,
+		query,
+		candidateLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	scored := make([]scoredProduct, 0, len(candidates))
+	semanticCandidates := []product.Candidate{}
 
-	for _, candidate := range candidates {
+	if s.embedder != nil {
+		queryEmbedding, err := s.embedder.Embed(ctx, query)
+		if err != nil {
+			return nil, err
+		}
+
+		semanticCandidates, err = s.repository.SemanticSearch(
+			ctx,
+			queryEmbedding,
+			candidateLimit,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	candidates := make(map[string]scoredProduct)
+
+	for _, candidate := range lexicalCandidates {
 		baseScore := scoreProduct(query, candidate.Product)
 
-		hybridScore := baseScore + candidate.LexicalScore
+		candidates[candidate.Product.ID] = scoredProduct{
+			product: candidate.Product,
+			score:   0.4 * baseScore,
+		}
+	}
 
-		if hybridScore > 0 {
-			scored = append(scored, scoredProduct{
+	for _, candidate := range semanticCandidates {
+		item, exists := candidates[candidate.Product.ID]
+
+		if !exists {
+			item = scoredProduct{
 				product: candidate.Product,
-				score:   hybridScore,
-			})
+			}
+		}
+
+		item.score += 0.6 * candidate.SemanticScore
+		candidates[candidate.Product.ID] = item
+	}
+
+	scored := make([]scoredProduct, 0, len(candidates))
+
+	for _, item := range candidates {
+		if item.score > 0 {
+			scored = append(scored, item)
 		}
 	}
 

@@ -7,6 +7,15 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
+type fakeEmbeddingProvider struct{}
+
+func (f *fakeEmbeddingProvider) Embed(
+	ctx context.Context,
+	text string,
+) ([]float32, error) {
+	return make([]float32, 384), nil
+}
+
 func TestInMemoryServiceSearch(t *testing.T) {
 	products := []product.Product{
 		{
@@ -33,7 +42,10 @@ func TestInMemoryServiceSearch(t *testing.T) {
 	}
 
 	repository := product.NewInMemoryRepository(products)
-	service := NewInMemoryService(repository)
+	service := NewInMemoryService(
+		repository,
+		&fakeEmbeddingProvider{},
+	)
 
 	results, err := service.Search(
 		context.Background(),

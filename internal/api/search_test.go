@@ -11,6 +11,14 @@ import (
 	"github.com/martinushka/ios-rag/internal/search"
 )
 
+type fakeEmbeddingProvider struct{}
+
+func (f *fakeEmbeddingProvider) Embed(
+	ctx context.Context,
+	text string,
+) ([]float32, error) {
+	return make([]float32, 384), nil
+}
 func TestSearchReturnsServiceResults(t *testing.T) {
 	service := &fakeSearchService{
 		results: []search.SearchResult{
@@ -68,7 +76,12 @@ func (f *fakeSearchService) Search(
 
 func newTestHandler() *Handler {
 	repository := product.NewInMemoryRepository(nil)
-	return NewHandler(search.NewInMemoryService(repository))
+	return NewHandler(
+		search.NewInMemoryService(
+			repository,
+			&fakeEmbeddingProvider{},
+		),
+	)
 }
 
 func TestSearch(t *testing.T) {
