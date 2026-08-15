@@ -7,9 +7,14 @@ import (
 	"github.com/martinushka/ios-rag/internal/text"
 )
 
+type Candidate struct {
+	Product      Product
+	LexicalScore float64
+}
+
 type Repository interface {
 	List(ctx context.Context) ([]Product, error)
-	Search(ctx context.Context, query string, limit int) ([]Product, error)
+	Search(ctx context.Context, query string, limit int) ([]Candidate, error)
 }
 
 type InMemoryRepository struct {
@@ -33,16 +38,16 @@ func (r *InMemoryRepository) Search(
 	ctx context.Context,
 	query string,
 	limit int,
-) ([]Product, error) {
+) ([]Candidate, error) {
 	query = strings.TrimSpace(query)
 
 	if query == "" || limit <= 0 {
-		return []Product{}, nil
+		return []Candidate{}, nil
 	}
 
 	queryTokens := text.Tokens(query)
 
-	results := make([]Product, 0, limit)
+	results := make([]Candidate, 0, limit)
 
 	for _, p := range r.products {
 		titleTokens := text.Tokens(p.Title)
@@ -52,7 +57,10 @@ func (r *InMemoryRepository) Search(
 		if matchesAny(queryTokens, titleTokens) ||
 			matchesAny(queryTokens, descriptionTokens) ||
 			matchesAny(queryTokens, categoryTokens) {
-			results = append(results, p)
+			results = append(results, Candidate{
+				Product:      p,
+				LexicalScore: 0,
+			})
 		}
 
 		if len(results) >= limit {

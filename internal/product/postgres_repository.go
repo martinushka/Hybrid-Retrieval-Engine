@@ -58,21 +58,27 @@ func (r *PostgresRepository) Search(
 	ctx context.Context,
 	query string,
 	limit int,
-) ([]Product, error) {
+) ([]Candidate, error) {
 	query = strings.TrimSpace(query)
 
 	if query == "" || limit <= 0 {
-		return []Product{}, nil
+		return []Candidate{}, nil
 	}
 
 	rows, err := r.conn.Query(ctx, `
-		SELECT id, title, description, category, price
+		SELECT
+			id,
+			title,
+			description,
+			category,
+			price,
+			ts_rank(
+				search_vector,
+				websearch_to_tsquery('simple', $1)
+			) AS lexical_score
 		FROM products
 		WHERE search_vector @@ websearch_to_tsquery('simple', $1)
-		ORDER BY ts_rank(
-			search_vector,
-			websearch_to_tsquery('simple', $1)
-		) DESC
+		ORDER BY lexical_score DESC
 		LIMIT $2
 	`, query, limit)
 	if err != nil {
@@ -80,27 +86,28 @@ func (r *PostgresRepository) Search(
 	}
 	defer rows.Close()
 
-	products := make([]Product, 0, limit)
+	results := make([]Candidate, 0, limit)
 
 	for rows.Next() {
-		var p Product
+		var candidate Candidate
 
 		if err := rows.Scan(
-			&p.ID,
-			&p.Title,
-			&p.Description,
-			&p.Category,
-			&p.Price,
+			&candidate.Product.ID,
+			&candidate.Product.Title,
+			&candidate.Product.Description,
+			&candidate.Product.Category,
+			&candidate.Product.Price,
+			&candidate.LexicalScore,
 		); err != nil {
 			return nil, err
 		}
 
-		products = append(products, p)
+		results = append(results, candidate)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return products, nil
+	return results, nil
 }

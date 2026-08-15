@@ -48,20 +48,22 @@ func (s *InMemoryService) Search(
 		candidateLimit = 50
 	}
 
-	products, err := s.repository.Search(ctx, query, candidateLimit)
+	candidates, err := s.repository.Search(ctx, query, candidateLimit)
 	if err != nil {
 		return nil, err
 	}
 
-	scored := make([]scoredProduct, 0, len(products))
+	scored := make([]scoredProduct, 0, len(candidates))
 
-	for _, p := range products {
-		score := scoreProduct(query, p)
+	for _, candidate := range candidates {
+		baseScore := scoreProduct(query, candidate.Product)
 
-		if score > 0 {
+		hybridScore := baseScore + candidate.LexicalScore
+
+		if hybridScore > 0 {
 			scored = append(scored, scoredProduct{
-				product: p,
-				score:   score,
+				product: candidate.Product,
+				score:   hybridScore,
 			})
 		}
 	}
