@@ -6,7 +6,6 @@ The system is designed to retrieve the most relevant products for a user query, 
 
 ## What the System Does
 
-* accepts search queries through a REST API;
 * normalizes and tokenizes text;
 * performs lexical search across product titles, categories, and descriptions;
 * calculates relevance scores for retrieved products;
@@ -58,17 +57,6 @@ Lexical Search   Semantic Search
 **RAG Pipeline** — constructs a context from retrieved documents and uses an LLM to generate grounded answers.
 
 **Sources** — preserves the documents used to generate each answer, improving transparency and traceability.
-
-## Tech Stack
-
-* **Go** — backend and core business logic
-* **net/http** — REST API
-* **PostgreSQL** — persistent data storage
-* **pgvector** — vector storage and similarity search
-* **Embeddings** — semantic representation of queries and documents
-* **LLM** — context-aware answer generation
-* **Docker** — containerization
-* **Git** — version control
 
 ## Project Direction
 
