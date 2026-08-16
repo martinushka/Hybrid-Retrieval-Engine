@@ -63,15 +63,27 @@ func (s *InMemoryService) Search(
 		return nil, err
 	}
 
-	semanticCandidates := []product.Candidate{}
+	candidates := make(map[string]scoredProduct)
 
+	// Lexical candidates are the primary source of relevance.
+	for _, candidate := range lexicalCandidates {
+		baseScore := scoreProduct(query, candidate.Product)
+
+		candidates[candidate.Product.ID] = scoredProduct{
+			product: candidate.Product,
+			score:   0.6 * baseScore,
+		}
+	}
+
+	// Semantic search is used to improve ranking, but only for
+	// products that already have a lexical match.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
 			return nil, err
 		}
 
-		semanticCandidates, err = s.repository.SemanticSearch(
+		semanticCandidates, err := s.repository.SemanticSearch(
 			ctx,
 			queryEmbedding,
 			candidateLimit,
@@ -79,30 +91,17 @@ func (s *InMemoryService) Search(
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	candidates := make(map[string]scoredProduct)
+		for _, candidate := range semanticCandidates {
+			item, exists := candidates[candidate.Product.ID]
 
-	for _, candidate := range lexicalCandidates {
-		baseScore := scoreProduct(query, candidate.Product)
-
-		candidates[candidate.Product.ID] = scoredProduct{
-			product: candidate.Product,
-			score:   0.4 * baseScore,
-		}
-	}
-
-	for _, candidate := range semanticCandidates {
-		item, exists := candidates[candidate.Product.ID]
-
-		if !exists {
-			item = scoredProduct{
-				product: candidate.Product,
+			if !exists {
+				continue
 			}
-		}
 
-		item.score += 0.6 * candidate.SemanticScore
-		candidates[candidate.Product.ID] = item
+			item.score += 0.4 * candidate.SemanticScore
+			candidates[candidate.Product.ID] = item
+		}
 	}
 
 	scored := make([]scoredProduct, 0, len(candidates))

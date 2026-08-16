@@ -3,6 +3,7 @@ package product
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -121,6 +122,19 @@ func (r *PostgresRepository) SemanticSearch(
 		return []Candidate{}, nil
 	}
 
+	vector := make([]string, len(embedding))
+
+	for i, value := range embedding {
+		vector[i] = strconv.FormatFloat(
+			float64(value),
+			'f',
+			-1,
+			32,
+		)
+	}
+
+	vectorLiteral := "[" + strings.Join(vector, ",") + "]"
+
 	rows, err := r.conn.Query(ctx, `
 		SELECT
 			id,
@@ -133,7 +147,7 @@ func (r *PostgresRepository) SemanticSearch(
 		WHERE embedding IS NOT NULL
 		ORDER BY embedding <=> $1::vector
 		LIMIT $2
-	`, embedding, limit)
+	`, vectorLiteral, limit)
 	if err != nil {
 		return nil, fmt.Errorf("semantic search products: %w", err)
 	}

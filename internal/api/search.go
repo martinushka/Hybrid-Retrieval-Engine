@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/martinushka/ios-rag/internal/search"
@@ -64,6 +65,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 		request.Limit,
 	)
 	if err != nil {
+		log.Printf("search error: %v", err)
 		http.Error(w, "search failed", http.StatusInternalServerError)
 		return
 	}
