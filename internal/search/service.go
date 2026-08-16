@@ -54,6 +54,9 @@ func (s *InMemoryService) Search(
 		candidateLimit = 50
 	}
 
+	candidates := make(map[string]scoredProduct)
+
+	// Lexical search.
 	lexicalCandidates, err := s.repository.Search(
 		ctx,
 		query,
@@ -63,9 +66,6 @@ func (s *InMemoryService) Search(
 		return nil, err
 	}
 
-	candidates := make(map[string]scoredProduct)
-
-	// Lexical candidates are the primary source of relevance.
 	for _, candidate := range lexicalCandidates {
 		baseScore := scoreProduct(query, candidate.Product)
 
@@ -75,8 +75,12 @@ func (s *InMemoryService) Search(
 		}
 	}
 
-	// Semantic search is used to improve ranking, but only for
-	// products that already have a lexical match.
+	// Semantic search.
+	//
+	// Semantic candidates are allowed even when there is no
+	// lexical match. This is the important part of hybrid retrieval:
+	// a product can be relevant by meaning without sharing exact words
+	// with the query.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
@@ -96,6 +100,10 @@ func (s *InMemoryService) Search(
 			item, exists := candidates[candidate.Product.ID]
 
 			if !exists {
+				candidates[candidate.Product.ID] = scoredProduct{
+					product: candidate.Product,
+					score:   0.4 * candidate.SemanticScore,
+				}
 				continue
 			}
 
