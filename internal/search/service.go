@@ -9,6 +9,8 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
+const semanticThreshold = 0.80
+
 type SearchResult struct {
 	Product product.Product
 	Score   float64
@@ -76,11 +78,6 @@ func (s *InMemoryService) Search(
 	}
 
 	// Semantic search.
-	//
-	// Semantic candidates are allowed even when there is no
-	// lexical match. This is the important part of hybrid retrieval:
-	// a product can be relevant by meaning without sharing exact words
-	// with the query.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
@@ -97,14 +94,17 @@ func (s *InMemoryService) Search(
 		}
 
 		for _, candidate := range semanticCandidates {
+			// Ignore semantically weak candidates.
+			if candidate.SemanticScore < semanticThreshold {
+				continue
+			}
+
 			item, exists := candidates[candidate.Product.ID]
 
 			if !exists {
-				candidates[candidate.Product.ID] = scoredProduct{
+				item = scoredProduct{
 					product: candidate.Product,
-					score:   0.4 * candidate.SemanticScore,
 				}
-				continue
 			}
 
 			item.score += 0.4 * candidate.SemanticScore
@@ -115,9 +115,11 @@ func (s *InMemoryService) Search(
 	scored := make([]scoredProduct, 0, len(candidates))
 
 	for _, item := range candidates {
-		if item.score > 0 {
-			scored = append(scored, item)
+		if item.score <= 0 {
+			continue
 		}
+
+		scored = append(scored, item)
 	}
 
 	sort.SliceStable(scored, func(i, j int) bool {
