@@ -9,8 +9,6 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
-const semanticThreshold = 0.80
-
 type SearchResult struct {
 	Product product.Product
 	Score   float64
@@ -78,6 +76,10 @@ func (s *InMemoryService) Search(
 	}
 
 	// Semantic search.
+	//
+	// Semantic candidates can be added even when there is no
+	// lexical match. This allows the search to find products
+	// that are relevant by meaning rather than exact words.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
@@ -94,7 +96,6 @@ func (s *InMemoryService) Search(
 		}
 
 		for _, candidate := range semanticCandidates {
-			// Ignore semantically weak candidates.
 			if candidate.SemanticScore < semanticThreshold {
 				continue
 			}
@@ -104,6 +105,7 @@ func (s *InMemoryService) Search(
 			if !exists {
 				item = scoredProduct{
 					product: candidate.Product,
+					score:   0,
 				}
 			}
 
@@ -115,11 +117,9 @@ func (s *InMemoryService) Search(
 	scored := make([]scoredProduct, 0, len(candidates))
 
 	for _, item := range candidates {
-		if item.score <= 0 {
-			continue
+		if item.score > 0 {
+			scored = append(scored, item)
 		}
-
-		scored = append(scored, item)
 	}
 
 	sort.SliceStable(scored, func(i, j int) bool {

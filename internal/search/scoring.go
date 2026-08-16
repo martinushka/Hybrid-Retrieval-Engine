@@ -5,6 +5,11 @@ import (
 	"github.com/martinushka/ios-rag/internal/text"
 )
 
+const (
+	maxLexicalScore   = 5.0
+	semanticThreshold = 0.80
+)
+
 func scoreProduct(query string, p product.Product) float64 {
 	normalizedQuery := text.Normalize(query)
 	normalizedTitle := text.Normalize(p.Title)
@@ -57,4 +62,34 @@ func scoreProduct(query string, p product.Product) float64 {
 	}
 
 	return score
+}
+
+func normalizeLexicalScore(score float64) float64 {
+	if score <= 0 {
+		return 0
+	}
+
+	if score >= maxLexicalScore {
+		return 1
+	}
+
+	return score / maxLexicalScore
+}
+
+func normalizeSemanticScore(score float64) float64 {
+	if score <= semanticThreshold {
+		return 0
+	}
+
+	return (score - semanticThreshold) / (1 - semanticThreshold)
+}
+
+func hybridScore(lexicalScore, semanticScore float64) float64 {
+	const lexicalWeight = 0.6
+	const semanticWeight = 0.4
+
+	lexical := normalizeLexicalScore(lexicalScore)
+	semantic := normalizeSemanticScore(semanticScore)
+
+	return lexicalWeight*lexical + semanticWeight*semantic
 }
