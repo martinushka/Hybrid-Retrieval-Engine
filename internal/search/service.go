@@ -9,6 +9,8 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
+const rrfK = 60.0
+
 type SearchResult struct {
 	Product product.Product
 	Score   float64
@@ -36,6 +38,10 @@ func NewInMemoryService(
 type scoredProduct struct {
 	product product.Product
 	score   float64
+}
+
+func rrfScore(rank int) float64 {
+	return 1.0 / (rrfK + float64(rank))
 }
 
 func (s *InMemoryService) Search(
@@ -66,20 +72,24 @@ func (s *InMemoryService) Search(
 		return nil, err
 	}
 
-	for _, candidate := range lexicalCandidates {
-		baseScore := scoreProduct(query, candidate.Product)
+	sort.SliceStable(lexicalCandidates, func(i, j int) bool {
+		left := scoreProduct(query, lexicalCandidates[i].Product)
+		right := scoreProduct(query, lexicalCandidates[j].Product)
 
+		return left > right
+	})
+
+	for rank, candidate := range lexicalCandidates {
 		candidates[candidate.Product.ID] = scoredProduct{
 			product: candidate.Product,
-			score:   0.6 * baseScore,
+			score:   rrfScore(rank + 1),
 		}
 	}
 
 	// Semantic search.
 	//
 	// Semantic candidates can be added even when there is no
-	// lexical match. This allows the search to find products
-	// that are relevant by meaning rather than exact words.
+	// lexical match. Weak semantic matches are filtered out.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
@@ -95,7 +105,7 @@ func (s *InMemoryService) Search(
 			return nil, err
 		}
 
-		for _, candidate := range semanticCandidates {
+		for rank, candidate := range semanticCandidates {
 			if candidate.SemanticScore < semanticThreshold {
 				continue
 			}
@@ -109,7 +119,7 @@ func (s *InMemoryService) Search(
 				}
 			}
 
-			item.score += 0.4 * candidate.SemanticScore
+			item.score += rrfScore(rank + 1)
 			candidates[candidate.Product.ID] = item
 		}
 	}
