@@ -9,7 +9,10 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
-const rrfK = 60.0
+const (
+	rrfK              = 60.0
+	semanticThreshold = 0.80
+)
 
 type SearchResult struct {
 	Product product.Product
@@ -62,7 +65,6 @@ func (s *InMemoryService) Search(
 
 	candidates := make(map[string]scoredProduct)
 
-	// Lexical search.
 	lexicalCandidates, err := s.repository.Search(
 		ctx,
 		query,
@@ -86,10 +88,6 @@ func (s *InMemoryService) Search(
 		}
 	}
 
-	// Semantic search.
-	//
-	// Semantic candidates can be added even when there is no
-	// lexical match. Weak semantic matches are filtered out.
 	if s.embedder != nil {
 		queryEmbedding, err := s.embedder.Embed(ctx, query)
 		if err != nil {
