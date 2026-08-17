@@ -23,19 +23,28 @@ type Service interface {
 	Search(ctx context.Context, query string, limit int) ([]SearchResult, error)
 }
 
-type InMemoryService struct {
+type HybridService struct {
 	repository product.Repository
 	embedder   embedding.Provider
 }
 
-func NewInMemoryService(
+func NewHybridService(
 	repository product.Repository,
 	embedder embedding.Provider,
-) *InMemoryService {
-	return &InMemoryService{
+) *HybridService {
+	return &HybridService{
 		repository: repository,
 		embedder:   embedder,
 	}
+}
+
+// NewInMemoryService is kept for backward compatibility with existing tests.
+// Despite the historical name, it can work with any product.Repository.
+func NewInMemoryService(
+	repository product.Repository,
+	embedder embedding.Provider,
+) *HybridService {
+	return NewHybridService(repository, embedder)
 }
 
 type scoredProduct struct {
@@ -47,7 +56,7 @@ func rrfScore(rank int) float64 {
 	return 1.0 / (rrfK + float64(rank))
 }
 
-func (s *InMemoryService) Search(
+func (s *HybridService) Search(
 	ctx context.Context,
 	query string,
 	limit int,
@@ -89,7 +98,10 @@ func (s *InMemoryService) Search(
 	}
 
 	if s.embedder != nil {
-		queryEmbedding, err := s.embedder.Embed(ctx, query)
+		queryEmbedding, err := s.embedder.Embed(
+			ctx,
+			"query: "+query,
+		)
 		if err != nil {
 			return nil, err
 		}

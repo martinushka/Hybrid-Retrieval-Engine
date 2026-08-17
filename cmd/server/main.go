@@ -36,7 +36,7 @@ func main() {
 
 	repository := product.NewPostgresRepository(conn)
 	embedder := embedding.NewHTTPProvider("http://127.0.0.1:8000")
-	searchService := search.NewInMemoryService(repository, embedder)
+	searchService := search.NewHybridService(repository, embedder)
 	apiHandler := api.NewHandler(searchService)
 
 	mux := http.NewServeMux()
@@ -56,7 +56,8 @@ func main() {
 	go func() {
 		log.Printf("server started on :%s", cfg.Port)
 
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil &&
+			err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
 	}()
