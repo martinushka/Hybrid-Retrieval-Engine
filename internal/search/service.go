@@ -38,15 +38,6 @@ func NewHybridService(
 	}
 }
 
-// NewInMemoryService is kept for backward compatibility with existing tests.
-// Despite the historical name, it can work with any product.Repository.
-func NewInMemoryService(
-	repository product.Repository,
-	embedder embedding.Provider,
-) *HybridService {
-	return NewHybridService(repository, embedder)
-}
-
 type scoredProduct struct {
 	product product.Product
 	score   float64
@@ -160,4 +151,34 @@ func (s *HybridService) Search(
 	}
 
 	return results, nil
+}
+
+// InMemoryService сохраняет API, которое используют существующие тесты.
+// Реализация использует тот же hybrid search pipeline.
+type InMemoryService struct {
+	repository product.Repository
+	embedder   embedding.Provider
+}
+
+func NewInMemoryService(
+	repository product.Repository,
+	embedder embedding.Provider,
+) *InMemoryService {
+	return &InMemoryService{
+		repository: repository,
+		embedder:   embedder,
+	}
+}
+
+func (s *InMemoryService) Search(
+	ctx context.Context,
+	query string,
+	limit int,
+) ([]SearchResult, error) {
+	service := &HybridService{
+		repository: s.repository,
+		embedder:   s.embedder,
+	}
+
+	return service.Search(ctx, query, limit)
 }
