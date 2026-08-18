@@ -183,7 +183,7 @@ func TestRRFCombinesLexicalAndSemanticResults(t *testing.T) {
 	}
 }
 
-func TestRRFFiltersWeakSemanticMatches(t *testing.T) {
+func TestRRFKeepsSemanticMatchesRegardlessOfRawSimilarity(t *testing.T) {
 	repository := &fakeSearchRepository{
 		semanticCandidates: []product.Candidate{
 			{
@@ -218,15 +218,8 @@ func TestRRFFiltersWeakSemanticMatches(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(results) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(results))
-	}
-
-	if results[0].Product.ID != "2" {
-		t.Fatalf(
-			"expected strong semantic match to remain, got %s",
-			results[0].Product.ID,
-		)
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(results))
 	}
 }
 

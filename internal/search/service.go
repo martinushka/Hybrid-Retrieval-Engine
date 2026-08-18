@@ -9,10 +9,7 @@ import (
 	"github.com/martinushka/ios-rag/internal/product"
 )
 
-const (
-	rrfK              = 60.0
-	semanticThreshold = 0.80
-)
+const rrfK = 60.0
 
 type SearchResult struct {
 	Product product.Product
@@ -107,10 +104,6 @@ func (s *HybridService) Search(
 		}
 
 		for rank, candidate := range semanticCandidates {
-			if candidate.SemanticScore < semanticThreshold {
-				continue
-			}
-
 			item, exists := candidates[candidate.Product.ID]
 
 			if !exists {
